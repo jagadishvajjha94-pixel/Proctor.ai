@@ -1,0 +1,129 @@
+// Production-ready schema for 3000+ concurrent students
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  college        String
+  registrationId String   @unique
+  currentAttempt Int      @default(1)
+  currentPhase   String   @default("phase1") // phase1 | phase2
+  language       String   @default("python")
+  status         String   @default("not_started") // not_started | in_progress | completed | locked
+  violations     Int      @default(0)
+  integrityScore Int      @default(100)
+  createdAt      DateTime @default(now())
+
+  sessions   TestSession[]
+  results    TestResult[]
+  decision   EligibilityDecision?
+  @@index([email])
+  @@index([status])
+  @@index([college])
+}
+
+model TestSession {
+  id         String    @id @default(cuid())
+  studentId  String
+  attempt    Int
+  phase      String // phase1 | phase2
+  status     String    @default("in_progress")
+  startTime  DateTime  @default(now())
+  endTime    DateTime?
+  questions  Json?     @default("[]") // Stored question set for this session
+
+  student     Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  violations  ViolationLog[]
+  submissions Submission[]
+
+  @@index([studentId])
+  @@index([status])
+}
+
+model ViolationLog {
+  id          String   @id @default(cuid())
+  sessionId   String
+  type        String
+  timestamp   DateTime @default(now())
+  severity    String // low | medium | high
+  description String
+  screenshotUrl String?
+
+  session TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model Submission {
+  id           String   @id @default(cuid())
+  sessionId    String
+  questionId   String
+  code         String   @db.Text
+  language     String
+  status       String   @default("pending")
+  passedTests  Int      @default(0)
+  totalTests   Int      @default(0)
+  executionTime Int?
+  memoryUsed   Int?
+  score        Int      @default(0)
+  submittedAt  DateTime @default(now())
+
+  session TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model TestResult {
+  id                 String   @id @default(cuid())
+  studentId          String
+  attempt            Int
+  phase1Score        Int
+  phase2Score        Int
+  totalScore         Int
+  accuracy           Int
+  performance        Int
+  violationCount     Int
+  integrityScore     Int
+  codingAccuracy     Int
+  problemSolvingDepth Int
+  consistency        Int
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, attempt])
+  @@index([studentId])
+}
+
+model EligibilityDecision {
+  id              String   @id @default(cuid())
+  studentId       String   @unique
+  status          String // eligible | borderline | not_eligible
+  confidence      Int
+  reasons         String[] @default([])
+  scores          Json     // { codingAccuracy, problemSolving, performance, consistency, integrity, behavioralTrust }
+  recommendation  String   @db.Text
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model QuestionHash {
+  id        String   @id @default(cuid())
+  hash      String   @unique
+  createdAt DateTime @default(now())
+
+  @@index([hash])
+}
+
+model BlueprintUsage {
+  id        String   @id @default(cuid())
+  blueprintId String @unique
+  count     Int      @default(0)
+}

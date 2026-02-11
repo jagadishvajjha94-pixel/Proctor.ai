@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .font-display {
+    font-family: var(--font-outfit), var(--font-inter), system-ui, sans-serif;
+  }
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 40% 20%, hsl(199 89% 20% / 0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsl(173 80% 35% / 0.08) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsl(199 89% 15% / 0.1) 0px, transparent 50%);
+  }
+  .card-glow {
+    box-shadow: 0 0 0 1px hsl(var(--border)), 0 4px 24px -4px hsl(var(--background) / 0.5);
+  }
+}
+
+@layer base {
+  :root {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 222 47% 6%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 58%;
+    --accent: 173 80% 40%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 199 89% 48%;
+    --chart-1: 199 89% 48%;
+    --chart-2: 173 80% 40%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 0 72% 51%;
+    --chart-5: 280 65% 60%;
+    --radius: 0.75rem;
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 18%;
+    --sidebar-ring: 199 89% 48%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 6%;
+    --success: 173 80% 40%;
+    --success-foreground: 222 47% 6%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold tracking-tight;
+  }
+}
