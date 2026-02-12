@@ -50,6 +50,18 @@ pnpm build
 pnpm start
 ```
 
+## 5. Vercel Deployment (pnpm install exit 236)
+
+If `pnpm install` fails with exit 236 on Vercel, try:
+
+1. **Node 20** – Set in Vercel Project Settings → General → Node.js Version: **20.x** (or use `engines.node` in package.json).
+2. **ENABLE_EXPERIMENTAL_COREPACK** – In Vercel → Settings → Environment Variables, add:
+   - Name: `ENABLE_EXPERIMENTAL_COREPACK`
+   - Value: `1`
+   - Redeploy.
+
+3. **Already applied in this repo**: `--ignore-scripts` in install command, `pdf-parse` as optionalDependency, Node 20 in engines.
+
 ## Design & Security Docs
 
 See **docs/** for production design:
