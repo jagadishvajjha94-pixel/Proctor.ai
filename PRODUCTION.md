@@ -62,6 +62,23 @@ If `pnpm install` fails with exit 236 on Vercel, try:
 
 3. **Already applied in this repo**: `--ignore-scripts` in install command, `pdf-parse` as optionalDependency, Node 20 in engines.
 
+## 6. Vercel deployment checklist (avoid build/runtime errors)
+
+1. **Environment variables** – In Vercel → Project → Settings → Environment Variables, add (and enable for **Production**, **Preview**, and **Build**):
+   - `DATABASE_URL` – Your PostgreSQL connection string (required for production DB).
+   - `OPENAI_API_KEY` – For question generation.
+   - `SESSION_SECRET` – e.g. `openssl rand -base64 32`.
+   - `ADMIN_PASSWORD` – Admin login.
+
+2. **Node version** – In Vercel → Settings → General → Node.js Version, set **20.x** (or leave default; `package.json` has `engines.node`).
+
+3. **Build command** – Leave as `pnpm run build` (runs `prisma generate && next build`). No need to change unless you use a custom command.
+
+4. **If build fails** – Check the failing step in the Vercel build log:
+   - **Install (exit 236)** → See section 5 above (Node 20, ENABLE_EXPERIMENTAL_COREPACK, `--ignore-scripts`).
+   - **Prisma / DATABASE_URL** → Ensure `DATABASE_URL` is set and enabled for **Build**.
+   - **Next.js build** → Ensure all env vars above are set; check for TypeScript or lint errors locally with `pnpm build`.
+
 ## Design & Security Docs
 
 See **docs/** for production design:
