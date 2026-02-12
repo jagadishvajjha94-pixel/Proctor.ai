@@ -1,6 +1,6 @@
 # Production Deployment Guide
 
-This app is configured for **3000+ concurrent students**. Follow these steps for production.
+This app uses **Vite (React)** for the frontend and **Express** for the API (no Next.js). It is configured for **3000+ concurrent students**. Follow these steps for production.
 
 ## 1. Environment Variables
 
@@ -78,12 +78,12 @@ If `pnpm install` fails with exit 236 on Vercel, try:
 
 2. **Node version** – In Vercel → Settings → General → Node.js Version, set **20.x** (or leave default; `package.json` has `engines.node`).
 
-3. **Build command** – Leave as `pnpm run build` (runs `prisma generate && next build`). No need to change unless you use a custom command.
+3. **Build command** – Leave as `pnpm run build` (runs `prisma generate && vite build`). Output is in `dist/`; `/api/*` is served by the Express app via Vercel serverless (`api/[[...slug]].ts`).
 
 4. **If build fails** – Check the failing step in the Vercel build log:
    - **Install (exit 236)** → See section 5 above (Node 20, ENABLE_EXPERIMENTAL_COREPACK, `--ignore-scripts`).
    - **Prisma / DATABASE_URL** → Ensure `DATABASE_URL` is set and enabled for **Build**.
-   - **Next.js build** → Ensure all env vars above are set; check for TypeScript or lint errors locally with `pnpm build`.
+   - **Vite build** → Ensure all env vars above are set; check for TypeScript or lint errors locally with `pnpm build`.
 
 ## Design & Security Docs
 

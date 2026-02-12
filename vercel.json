@@ -1,5 +1,8 @@
 {
   "installCommand": "corepack enable pnpm && pnpm install --ignore-scripts --no-frozen-lockfile --no-optional",
   "buildCommand": "pnpm run build",
-  "framework": "nextjs"
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }
