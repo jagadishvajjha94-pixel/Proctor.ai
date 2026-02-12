@@ -55,12 +55,18 @@ pnpm start
 If `pnpm install` fails with exit 236 on Vercel, try:
 
 1. **Node 20** – Set in Vercel Project Settings → General → Node.js Version: **20.x** (or use `engines.node` in package.json).
-2. **ENABLE_EXPERIMENTAL_COREPACK** – In Vercel → Settings → Environment Variables, add:
+2. **ENABLE_EXPERIMENTAL_COREPACK** – In Vercel → Settings → **Environment Variables**, add (enable for Production, Preview, and **Build**):
    - Name: `ENABLE_EXPERIMENTAL_COREPACK`
    - Value: `1`
-   - Redeploy.
+   - Redeploy. This fixes pnpm install 236 for many projects.
 
-3. **Already applied in this repo**: `--ignore-scripts` in install command, `pdf-parse` as optionalDependency, Node 20 in engines.
+3. **Already applied in this repo**: `corepack enable pnpm`, `--ignore-scripts`, `--no-optional`, `pdf-parse` as optionalDependency, Node 20 in engines.
+
+4. **If exit 236 still happens** – Force npm on Vercel: in Vercel → Project → **Settings** → **General** → **Build & Development** → **Install Command**, set to:
+   ```bash
+   npm install --legacy-peer-deps --ignore-scripts
+   ```
+   Then add `package-lock.json` to the repo (locally run `npm install --package-lock-only --legacy-peer-deps`, commit and push). Vercel will then use npm instead of pnpm.
 
 ## 6. Vercel deployment checklist (avoid build/runtime errors)
 

@@ -1,5 +1,5 @@
 {
-  "installCommand": "pnpm install --ignore-scripts --no-frozen-lockfile",
+  "installCommand": "corepack enable pnpm && pnpm install --ignore-scripts --no-frozen-lockfile --no-optional",
   "buildCommand": "pnpm run build",
   "framework": "nextjs"
 }
