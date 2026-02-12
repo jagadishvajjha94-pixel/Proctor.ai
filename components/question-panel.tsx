@@ -52,9 +52,10 @@ export function QuestionPanel({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-lg border border-border bg-card">
-      {/* Question Tabs */}
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2">
+    <div className="flex h-full min-h-0 flex-col rounded-lg border border-border bg-card overflow-hidden text-left">
+      {/* Question Tabs - scrollable for 100 questions */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2 overflow-x-auto">
+        <div className="flex items-center gap-2 min-w-0">
         {questions.map((q, i) => {
           const sub = submissions.get(q.id)
           return (
@@ -75,17 +76,18 @@ export function QuestionPanel({
             </button>
           )
         })}
+        </div>
       </div>
 
-      {/* Question Content */}
-      <Tabs defaultValue="problem" className="flex flex-1 flex-col">
-        <TabsList className="mx-4 mt-3 w-fit">
+      {/* Question Content - scrollable with visible scrollbar */}
+      <Tabs defaultValue="problem" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <TabsList className="mx-4 mt-3 shrink-0 w-fit">
           <TabsTrigger value="problem">Problem</TabsTrigger>
           <TabsTrigger value="output">Output</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="problem" className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full px-4 pb-4">
+        <TabsContent value="problem" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden data-[state=inactive]:hidden">
+          <div className="question-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-4 text-left">
             <div className="space-y-4 py-2">
               {/* Title & Difficulty */}
               <div>
@@ -157,11 +159,11 @@ export function QuestionPanel({
                 </div>
               </div>
             </div>
-          </ScrollArea>
+          </div>
         </TabsContent>
 
-        <TabsContent value="output" className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full px-4 pb-4">
+        <TabsContent value="output" className="flex-1 flex min-h-0 flex-col overflow-hidden">
+          <ScrollArea className="h-full min-h-0 flex-1 px-4 pb-4 [&>div]:!h-full [&>div>div]:!max-h-full">
             <div className="space-y-4 py-2">
               {output ? (
                 <>

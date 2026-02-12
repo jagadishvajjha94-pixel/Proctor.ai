@@ -289,17 +289,46 @@ export const dbStore = {
     }))
   },
 
-  async isQuestionUsed(hash: string): Promise<boolean> {
+  async getQuestionUseCount(hash: string): Promise<number> {
     const q = await prisma.questionHash.findUnique({ where: { hash } })
-    return !!q
+    return q?.useCount ?? 0
+  },
+
+  async incrementQuestionUse(hash: string): Promise<number> {
+    const q = await prisma.questionHash.upsert({
+      where: { hash },
+      create: { hash, useCount: 1 },
+      update: { useCount: { increment: 1 } },
+    })
+    return q.useCount
+  },
+
+  async getStudentSeenQuestionHashes(studentId: string): Promise<string[]> {
+    const list = await prisma.studentQuestionHash.findMany({
+      where: { studentId },
+      select: { questionHash: true },
+    })
+    return list.map((r) => r.questionHash)
+  },
+
+  async markStudentSeenQuestion(studentId: string, questionHash: string): Promise<void> {
+    await prisma.studentQuestionHash.upsert({
+      where: {
+        studentId_questionHash: { studentId, questionHash },
+      },
+      create: { studentId, questionHash },
+      update: {},
+    })
+  },
+
+  async isQuestionUsed(hash: string): Promise<boolean> {
+    const { QUESTION_REUSE_AFTER } = await import("./constants")
+    const count = await this.getQuestionUseCount(hash)
+    return count > 0 && count < QUESTION_REUSE_AFTER
   },
 
   async markQuestionUsed(hash: string): Promise<void> {
-    await prisma.questionHash.upsert({
-      where: { hash },
-      create: { hash },
-      update: {},
-    })
+    await this.incrementQuestionUse(hash)
   },
 
   async getBlueprintUsage(blueprintId: string): Promise<number> {

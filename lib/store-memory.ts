@@ -14,7 +14,8 @@ class MemoryStore {
   private sessions: Map<string, TestSession> = new Map()
   private results: Map<string, TestResult[]> = new Map()
   private decisions: Map<string, EligibilityDecision> = new Map()
-  private questionHashes: Set<string> = new Set()
+  private questionUseCount: Map<string, number> = new Map()
+  private studentSeenHashes: Map<string, Set<string>> = new Map()
   private blueprintUsage: Map<string, number> = new Map()
 
   async getStudent(id: string): Promise<Student | undefined> {
@@ -71,12 +72,37 @@ class MemoryStore {
     return Array.from(this.decisions.values())
   }
 
+  async getQuestionUseCount(hash: string): Promise<number> {
+    return this.questionUseCount.get(hash) ?? 0
+  }
+
+  async incrementQuestionUse(hash: string): Promise<number> {
+    const count = (this.questionUseCount.get(hash) ?? 0) + 1
+    this.questionUseCount.set(hash, count)
+    return count
+  }
+
+  async getStudentSeenQuestionHashes(studentId: string): Promise<string[]> {
+    return Array.from(this.studentSeenHashes.get(studentId) ?? [])
+  }
+
+  async markStudentSeenQuestion(studentId: string, hash: string): Promise<void> {
+    let set = this.studentSeenHashes.get(studentId)
+    if (!set) {
+      set = new Set()
+      this.studentSeenHashes.set(studentId, set)
+    }
+    set.add(hash)
+  }
+
   async isQuestionUsed(hash: string): Promise<boolean> {
-    return this.questionHashes.has(hash)
+    const { QUESTION_REUSE_AFTER } = await import("./constants")
+    const count = this.questionUseCount.get(hash) ?? 0
+    return count > 0 && count < QUESTION_REUSE_AFTER
   }
 
   async markQuestionUsed(hash: string): Promise<void> {
-    this.questionHashes.add(hash)
+    await this.incrementQuestionUse(hash)
   }
 
   async getBlueprintUsage(blueprintId: string): Promise<number> {
@@ -126,8 +152,9 @@ class MemoryStore {
 
 const memoryStore = new MemoryStore()
 
-// Seed demo data when using memory store
+// Seed demo data only in development when using memory store
 async function seedDemoData() {
+  if (process.env.NODE_ENV === "production") return
   const students = await memoryStore.getAllStudents(1)
   if (students.length > 0) return
 

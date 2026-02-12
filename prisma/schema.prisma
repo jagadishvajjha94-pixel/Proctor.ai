@@ -117,9 +117,21 @@ model EligibilityDecision {
 model QuestionHash {
   id        String   @id @default(cuid())
   hash      String   @unique
+  useCount  Int      @default(0)  // Reuse only after >= QUESTION_REUSE_AFTER (1000) students
   createdAt DateTime @default(now())
 
   @@index([hash])
+}
+
+model StudentQuestionHash {
+  id          String   @id @default(cuid())
+  studentId   String
+  questionHash String
+  createdAt   DateTime @default(now())
+
+  @@unique([studentId, questionHash])
+  @@index([studentId])
+  @@index([questionHash])
 }
 
 model BlueprintUsage {

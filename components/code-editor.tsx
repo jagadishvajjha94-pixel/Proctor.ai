@@ -107,7 +107,7 @@ export function CodeEditor({ language, onSubmit, onRun, isSubmitting, isRunning 
         </div>
         {/* Textarea */}
         <textarea
-          className="flex-1 resize-none bg-card p-3 font-mono text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
+          className="min-h-[280px] flex-1 resize-none bg-card p-3 font-mono text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
           value={code}
           onChange={handleCodeChange}
           onKeyDown={handleKeyDown}
@@ -115,6 +115,7 @@ export function CodeEditor({ language, onSubmit, onRun, isSubmitting, isRunning 
           autoCapitalize="off"
           autoCorrect="off"
           placeholder="Start coding..."
+          aria-label="Code editor"
         />
       </div>
     </div>

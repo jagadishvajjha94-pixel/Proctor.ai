@@ -56,6 +56,18 @@ export const store = {
   async getAllDecisions() {
     return (await getStore()).getAllDecisions()
   },
+  async getQuestionUseCount(hash: string) {
+    return (await getStore()).getQuestionUseCount(hash)
+  },
+  async incrementQuestionUse(hash: string) {
+    return (await getStore()).incrementQuestionUse(hash)
+  },
+  async getStudentSeenQuestionHashes(studentId: string) {
+    return (await getStore()).getStudentSeenQuestionHashes(studentId)
+  },
+  async markStudentSeenQuestion(studentId: string, hash: string) {
+    return (await getStore()).markStudentSeenQuestion(studentId, hash)
+  },
   async isQuestionUsed(hash: string) {
     return (await getStore()).isQuestionUsed(hash)
   },

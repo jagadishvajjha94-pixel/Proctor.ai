@@ -27,6 +27,12 @@ Create initial migration if needed:
 npx prisma migrate dev --name init
 ```
 
+If you already have a database and are updating: run a new migration for question uniqueness (no repeat before 1500 students, per-student no-repeat):
+
+```bash
+npx prisma migrate dev --name add_question_uniqueness
+```
+
 ## 3. Connection Pooling (3000+ users)
 
 Add to DATABASE_URL for high concurrency:
@@ -44,10 +50,22 @@ pnpm build
 pnpm start
 ```
 
+## Design & Security Docs
+
+See **docs/** for production design:
+
+- **docs/ARCHITECTURE.md** – System architecture, two-phase × two attempts, scalability
+- **docs/API_DESIGN.md** – REST API under `/api`
+- **docs/AI_FLOWS.md** – Question generation (1500 reuse), evaluation, eligibility, interview
+- **docs/SECURITY_STRATEGY.md** – Auth, proctoring (3/6/8 violations), anti-cheating
+- **docs/DEPLOYMENT.md** – Env vars, DB, sandbox, Google Sheets, checklist
+
 ## Features for Scale
 
-- **PostgreSQL** – Persistent storage, indexes on email, status, college
+- **PostgreSQL** – Persistent storage, indexes on email, status, college, question hashes
+- **Question uniqueness** – No repeat before 1500 students; same student never sees same question twice (`lib/constants.ts`: `QUESTION_REUSE_AFTER`)
 - **Pagination** – Admin lists capped at 5000, paginated queries
 - **Rate limiting** – 150 requests/min per IP on API routes
 - **Signed sessions** – JWT with jose (HS256)
 - **Prisma** – Connection pooling, singleton client
+- **Google Sheets** – Optional append on export when `GOOGLE_SHEETS_ID` and `GOOGLE_SERVICE_ACCOUNT_KEY` are set (`lib/google-sheets.ts`)

@@ -2,7 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes voice-bubble {
+  0%, 100% { transform: scale(0.6); opacity: 0.4; }
+  50% { transform: scale(1); opacity: 0.7; }
+}
+
 @layer utilities {
+  .animate-voice-bubble {
+    animation: voice-bubble 1.2s ease-in-out infinite;
+  }
   .text-balance {
     text-wrap: balance;
   }
@@ -70,9 +78,33 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display font-semibold tracking-tight;
   }
+}
+
+/* Question panel: scrollbar only when content overflows, thin and minimal */
+.question-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.question-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.question-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.question-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--border) / 0.6);
+  border-radius: 3px;
+}
+.question-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground) / 0.2);
+}
+/* Firefox: thin scrollbar, only when needed */
+.question-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border) / 0.6) transparent;
 }
