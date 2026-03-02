@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import useSWR from "swr"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,12 @@ export default function AdminDashboard() {
   const stats = data?.stats
   const students: Student[] = data?.students ?? []
   const exportRows: ExportRow[] = exportData?.rows ?? []
+
+  useEffect(() => {
+    if (isLoading || !data) return
+    if (data.error || (!data.stats && !data.student)) navigate("/", { replace: true })
+    if (!data.stats && data.student) navigate("/dashboard", { replace: true })
+  }, [data, isLoading, navigate])
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" })

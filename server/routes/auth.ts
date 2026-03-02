@@ -7,18 +7,28 @@ const router = Router()
 
 router.post("/login", async (req: Request, res: Response) => {
   try {
-    const { email, password, registrationId, name, college } = (req.body || {}) as {
-      email: string
-      password: string
+    const raw = (req.body || {}) as {
+      email?: string
+      password?: string
       registrationId?: string
       name?: string
       college?: string
     }
+    const email = (raw.email ?? "").trim().toLowerCase()
+    const password = (raw.password ?? "").trim()
+    const { registrationId, name, college } = raw
+    const regId = typeof registrationId === "string" ? registrationId.trim() : ""
+    const nameVal = typeof name === "string" ? name.trim() : ""
+    const collegeVal = typeof college === "string" ? college.trim() : ""
 
-    const adminPass = process.env.ADMIN_PASSWORD ?? "admin123"
-    if (email === "admin@proctorai.com" && password === adminPass) {
-      await createAdminSession(res)
-      return res.json({ role: "admin", redirect: "/admin" })
+    const adminEmail = (process.env.ADMIN_EMAIL ?? "jagadish@rcee.ac.in").trim().toLowerCase()
+    const adminPass = (process.env.ADMIN_PASSWORD ?? "jagadish123456").trim()
+    if (email === adminEmail) {
+      if (password === adminPass) {
+        await createAdminSession(res)
+        return res.json({ role: "admin", redirect: "/admin" })
+      }
+      return res.status(400).json({ error: "Invalid password" })
     }
 
     if (!email || !password) {
@@ -28,14 +38,14 @@ router.post("/login", async (req: Request, res: Response) => {
     let student = await store.getStudentByEmail(email)
 
     if (!student) {
-      if (password === "demo" && name && registrationId && college) {
+      if (password === "demo" && nameVal && regId && collegeVal) {
         const id = `stu_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
         student = {
           id,
-          name,
+          name: nameVal,
           email,
-          college,
-          registrationId,
+          college: collegeVal,
+          registrationId: regId,
           currentAttempt: 1,
           currentPhase: "phase1",
           language: "python",
@@ -45,7 +55,7 @@ router.post("/login", async (req: Request, res: Response) => {
           createdAt: new Date().toISOString(),
         } satisfies Student
         await store.setStudent(student)
-      } else if (!name || !registrationId || !college) {
+      } else if (!nameVal || !regId || !collegeVal) {
         return res.status(400).json({
           error: "New students must provide name, registration ID, and college",
           isNewStudent: true,
@@ -54,10 +64,10 @@ router.post("/login", async (req: Request, res: Response) => {
         const id = `stu_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
         student = {
           id,
-          name,
+          name: nameVal,
           email,
-          college,
-          registrationId,
+          college: collegeVal,
+          registrationId: regId,
           currentAttempt: 1,
           currentPhase: "phase1",
           language: "python",

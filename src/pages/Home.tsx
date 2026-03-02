@@ -1,17 +1,17 @@
 import React, { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Shield, Brain, Code2, Eye, BarChart3, Lock, ArrowRight, CheckCircle2, AlertTriangle } from "lucide-react"
+import { Shield, Brain, Code2, Eye, BarChart3, Lock, ArrowRight, CheckCircle2, AlertTriangle, KeyRound } from "lucide-react"
 import { features } from "@/lib/features"
 
 export default function LandingPage() {
   const navigate = useNavigate()
-  const [isLogin, setIsLogin] = useState(true)
+  const [authTab, setAuthTab] = useState<"login" | "register">("login")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({
@@ -35,14 +35,14 @@ export default function LandingPage() {
       const data = await res.json()
       if (!res.ok) {
         if (data.isNewStudent) {
-          setIsLogin(false)
+          setAuthTab("register")
           setError("Please fill in all fields to register.")
         } else {
           setError(data.error || "Authentication failed")
         }
         return
       }
-      navigate(data.redirect)
+      navigate(data.redirect || "/dashboard")
     } catch {
       setError("Network error. Please try again.")
     } finally {
@@ -74,6 +74,14 @@ export default function LandingPage() {
             </div>
             <span className="font-display text-xl font-bold tracking-tight text-foreground">ProctorAI</span>
           </div>
+          <Link
+            to="/admin-login"
+            className="rounded p-1.5 text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors"
+            title="Staff"
+            aria-label="Staff"
+          >
+            <KeyRound className="h-4 w-4" />
+          </Link>
         </div>
       </header>
 
@@ -140,7 +148,7 @@ export default function LandingPage() {
                 <CardDescription className="mt-1">Sign in to your account or register as a new student.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Tabs value={isLogin ? "login" : "register"} onValueChange={(v) => setIsLogin(v === "login")}>
+                <Tabs value={authTab} onValueChange={(v) => setAuthTab(v as "login" | "register")}>
                   <TabsList className="mb-6 grid w-full grid-cols-2">
                     <TabsTrigger value="login">Sign In</TabsTrigger>
                     <TabsTrigger value="register">Register</TabsTrigger>
@@ -149,15 +157,15 @@ export default function LandingPage() {
                     <TabsContent value="register" className="mt-0 space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" placeholder="Your full name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required={!isLogin} />
+                        <Input id="name" placeholder="Your full name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required={authTab === "register"} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="regId">Registration ID</Label>
-                        <Input id="regId" placeholder="e.g., REG2026001" value={formData.registrationId} onChange={(e) => setFormData({ ...formData, registrationId: e.target.value })} required={!isLogin} />
+                        <Input id="regId" placeholder="e.g., REG2026001" value={formData.registrationId} onChange={(e) => setFormData({ ...formData, registrationId: e.target.value })} required={authTab === "register"} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="college">College / University</Label>
-                        <Input id="college" placeholder="Your institution name" value={formData.college} onChange={(e) => setFormData({ ...formData, college: e.target.value })} required={!isLogin} />
+                        <Input id="college" placeholder="Your institution name" value={formData.college} onChange={(e) => setFormData({ ...formData, college: e.target.value })} required={authTab === "register"} />
                       </div>
                     </TabsContent>
                     <TabsContent value="login" className="mt-0" />
@@ -175,7 +183,7 @@ export default function LandingPage() {
                       </div>
                     )}
                     <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Authenticating..." : isLogin ? "Sign In" : "Register & Sign In"}
+                      {loading ? "Authenticating..." : authTab === "register" ? "Register & Sign In" : "Sign In"}
                       {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
                     </Button>
                   </form>

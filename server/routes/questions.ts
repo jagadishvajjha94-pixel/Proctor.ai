@@ -4,13 +4,13 @@ import { z } from "zod"
 import crypto from "crypto"
 import { store } from "../../lib/store"
 import { getSession as getAuthSession } from "../auth"
-import { QUESTION_REUSE_AFTER } from "../../lib/constants"
+import { QUESTION_REUSE_AFTER, QUESTIONS_PER_PHASE } from "../../lib/constants"
 import type { Language, TestPhase, Question } from "../../lib/types"
 
 const questionSchema = z.object({
   title: z.string(),
   description: z.string(),
-  difficulty: z.enum(["medium", "hard"]),
+  difficulty: z.enum(["easy", "medium", "hard"]),
   constraints: z.array(z.string()),
   examples: z.array(
     z.object({
@@ -119,7 +119,7 @@ const router = Router()
 
 router.post("/generate", async (req: Request, res: Response) => {
   try {
-    const { language, phase, studentId: bodyStudentId, sessionId: bodySessionId, count = 3 } = (req.body || {}) as {
+    const { language, phase, studentId: bodyStudentId, sessionId: bodySessionId, count = QUESTIONS_PER_PHASE } = (req.body || {}) as {
       language: Language
       phase: TestPhase
       studentId?: string
@@ -175,15 +175,15 @@ router.post("/generate", async (req: Request, res: Response) => {
             messages: [
               {
                 role: "system",
-                content: `You are a hard coding problem setter for campus placements. Generate a UNIQUE problem.
-Concept: "${blueprint.concept}". Language: ${LANGUAGE_NAMES[language]}.
-This student must NOT see the same problem twice. Use the UNIQUENESS SEED to vary: problem scenario, numbers, constraints, and logic so the problem is different from any standard or previously generated problem.
+                content: `You are a coding problem setter for basic campus placement tests. Generate a UNIQUE BASIC coding problem.
+Concept: "${blueprint.concept}". Language: ${LANGUAGE_NAMES[language]} — all examples and constraints must be appropriate for ${LANGUAGE_NAMES[language]}.
+This student must NOT see the same problem twice. Use the UNIQUENESS SEED to vary: scenario, numbers, and constraints so the problem is different from any standard or previously generated problem.
 UNIQUENESS SEED (use in story/numbers/constraints): ${uniquenessSeed}
-Rules: Difficulty "medium" or "hard" for phase1, "hard" for phase2. No classic textbook problems (e.g. no "Two Sum", "Reverse String"). Exactly 6 test cases: 2 visible (examples), 4 hidden. Time limit: ${resolvedPhase === "phase1" ? "1" : "2"}s. Memory: 256 MB. Output valid JSON only.`,
+Rules: BASIC only — difficulty must be "easy" or "medium" (no hard). Focus on fundamentals: arrays, strings, loops, conditionals, simple data structures. Language-specific syntax and idioms for ${LANGUAGE_NAMES[language]}. Exactly 6 test cases: 2 visible (examples), 4 hidden. Time limit: 2s. Memory: 256 MB. Output valid JSON only.`,
               },
               {
                 role: "user",
-                content: `Generate one problem. Concept: ${blueprint.concept}. Uniqueness: ${uniquenessSeed}.`,
+                content: `Generate one basic problem for ${LANGUAGE_NAMES[language]}. Concept: ${blueprint.concept}. Uniqueness: ${uniquenessSeed}.`,
               },
             ],
           })

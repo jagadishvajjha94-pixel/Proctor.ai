@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
 import useSWR from "swr"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,9 +14,19 @@ const fetcher = (url: string) => fetch(url, { credentials: "include" }).then((r)
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { data, error, isLoading, mutate } = useSWR("/api/session", fetcher)
   const [selectedLanguage, setSelectedLanguage] = useState<Language>("python")
   const [starting, setStarting] = useState(false)
+  const [redirectMessage, setRedirectMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    const msg = (location.state as { message?: string } | null)?.message
+    if (msg) {
+      setRedirectMessage(msg)
+      window.history.replaceState({}, "", location.pathname)
+    }
+  }, [location.state, location.pathname])
 
   const student: Student | null = data?.student ?? null
   const sessions: TestSession[] = data?.sessions ?? []
@@ -74,6 +84,15 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background bg-mesh">
+      {redirectMessage && (
+        <div className="mx-auto max-w-6xl px-6 pt-4">
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {redirectMessage}
+            <button type="button" onClick={() => setRedirectMessage(null)} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="Dismiss">×</button>
+          </div>
+        </div>
+      )}
       <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">

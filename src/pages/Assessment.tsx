@@ -19,7 +19,7 @@ import { QuestionPanel } from "@/components/question-panel"
 import { ProctoringCamera } from "@/components/proctoring-camera"
 import { AIInterview } from "@/components/ai-interview"
 import { features } from "@/lib/features"
-import { ASSESSMENT_DURATION_SECONDS } from "@/lib/constants"
+import { ASSESSMENT_DURATION_SECONDS, QUESTIONS_PER_PHASE } from "@/lib/constants"
 import type { Question, Submission, Language, ViolationType } from "@/lib/types"
 
 const FALLBACK_QUESTIONS: Question[] = [
@@ -95,6 +95,54 @@ const FALLBACK_QUESTIONS: Question[] = [
     timeLimit: 2,
     memoryLimit: 256,
   },
+  {
+    id: "q_fallback_4",
+    blueprintId: "bp_string_ops",
+    hash: "fb_004",
+    title: "Reverse a String",
+    description: "Given a string s, return the string reversed. Use basic loops and string/array operations only.",
+    difficulty: "easy",
+    category: "fundamentals",
+    constraints: ["1 <= s.length <= 1000", "s may contain letters, digits, spaces"],
+    examples: [
+      { input: 's = "hello"', output: '"olleh"', explanation: "Reverse of hello" },
+      { input: 's = "abc"', output: '"cba"' },
+    ],
+    testCases: [
+      { input: '"hello"', expectedOutput: '"olleh"', hidden: false },
+      { input: '"abc"', expectedOutput: '"cba"', hidden: false },
+      { input: '"a"', expectedOutput: '"a"', hidden: true },
+      { input: '"ab"', expectedOutput: '"ba"', hidden: true },
+      { input: '"test"', expectedOutput: '"tset"', hidden: true },
+    ],
+    language: "python",
+    timeLimit: 2,
+    memoryLimit: 256,
+  },
+  {
+    id: "q_fallback_5",
+    blueprintId: "bp_frequency",
+    hash: "fb_005",
+    title: "Count Even Numbers",
+    description: "Given an array of integers nums, return the count of numbers that are even (divisible by 2).",
+    difficulty: "easy",
+    category: "fundamentals",
+    constraints: ["1 <= nums.length <= 1000", "-10^4 <= nums[i] <= 10^4"],
+    examples: [
+      { input: "nums = [1,2,3,4,5]", output: "2", explanation: "2 and 4 are even" },
+      { input: "nums = [2,4,6]", output: "3" },
+    ],
+    testCases: [
+      { input: "[1,2,3,4,5]", expectedOutput: "2", hidden: false },
+      { input: "[2,4,6]", expectedOutput: "3", hidden: false },
+      { input: "[1,3,5]", expectedOutput: "0", hidden: true },
+      { input: "[0]", expectedOutput: "1", hidden: true },
+      { input: "[-2,0,2]", expectedOutput: "3", hidden: true },
+    ],
+    language: "python",
+    timeLimit: 2,
+    memoryLimit: 256,
+  },
 ]
 
 interface EvalOutput {
@@ -134,15 +182,23 @@ export default function AssessmentPage() {
 
   useEffect(() => {
     async function loadQuestions() {
-      if (!sid) return
+      if (!sid) {
+        setLoading(false)
+        return
+      }
       try {
         const res = await fetch("/api/questions/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ language, phase: "phase1", sessionId: sid, count: 3 }),
+          body: JSON.stringify({ language, phase: "phase1", sessionId: sid, count: QUESTIONS_PER_PHASE }),
           credentials: "include",
         })
         const data = await res.json()
+        if (res.status === 400 || res.status === 401) {
+          console.warn("Assessment: session invalid or expired", data?.error)
+          navigate("/dashboard", { replace: true, state: { message: data?.error || "Session expired. Please start the test from the dashboard." } })
+          return
+        }
         if (data.questions?.length > 0) {
           setQuestions(data.questions)
         } else {
@@ -156,7 +212,7 @@ export default function AssessmentPage() {
       }
     }
     loadQuestions()
-  }, [language, sid])
+  }, [language, sid, navigate])
 
   const handleSubmitTest = useCallback(async () => {
     try {
