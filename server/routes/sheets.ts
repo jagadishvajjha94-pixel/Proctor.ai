@@ -1,17 +1,9 @@
 import { Router, Request, Response } from "express"
-import { store } from "../../lib/store"
 import { appendToSheet } from "../../lib/google-sheets"
+import { buildExportRows, EXPORT_HEADERS } from "../../lib/export-data"
 import { getAuthenticatedStudent } from "../auth"
 
 const router = Router()
-
-const EXPORT_HEADERS = [
-  "Student ID", "Name", "Email", "College", "Language",
-  "Attempt 1 Phase 1", "Attempt 1 Phase 2", "Attempt 2 Phase 1", "Attempt 2 Phase 2",
-  "Total Score", "Accuracy %", "Performance",
-  "Violations", "Integrity %", "Eligibility",
-  "Confidence", "Recommendation", "Sessions", "Status", "Registered",
-]
 
 const INTERVIEW_EXPORT_HEADERS = [
   "Student ID",
@@ -48,46 +40,7 @@ function generateCSV(rows: Record<string, unknown>[]): string {
 
 router.post("/export", async (_req: Request, res: Response) => {
   try {
-    const [students, decisions] = await Promise.all([
-      store.getAllStudents(10000, 0),
-      store.getAllDecisions(),
-    ])
-
-    const rows = await Promise.all(students.map(async (student) => {
-      const [sessions, results] = await Promise.all([
-        store.getSessionsByStudent(student.id),
-        store.getResults(student.id),
-      ])
-      const decision = decisions.find((d) => d.studentId === student.id)
-
-      const attempt1Phase1 = results.find((r) => r.attempt === 1)
-      const attempt1Phase2 = results.find((r) => r.attempt === 1)
-      const attempt2Phase1 = results.find((r) => r.attempt === 2)
-      const attempt2Phase2 = results.find((r) => r.attempt === 2)
-
-      return {
-        studentId: student.registrationId,
-        name: student.name,
-        email: student.email,
-        college: student.college,
-        language: student.language,
-        attempt1Phase1Score: attempt1Phase1?.phase1Score ?? "N/A",
-        attempt1Phase2Score: attempt1Phase2?.phase2Score ?? "N/A",
-        attempt2Phase1Score: attempt2Phase1?.phase1Score ?? "N/A",
-        attempt2Phase2Score: attempt2Phase2?.phase2Score ?? "N/A",
-        totalScore: results.reduce((sum, r) => sum + r.totalScore, 0) || "N/A",
-        accuracy: results.length > 0 ? Math.round(results.reduce((sum, r) => sum + r.accuracy, 0) / results.length) + "%" : "N/A",
-        performance: results.length > 0 ? Math.round(results.reduce((sum, r) => sum + r.performance, 0) / results.length) : "N/A",
-        violationCount: student.violations,
-        integrityScore: student.integrityScore + "%",
-        eligibilityStatus: decision?.status ?? "pending",
-        confidence: decision?.confidence ? decision.confidence + "%" : "N/A",
-        recommendation: decision?.recommendation ?? "N/A",
-        totalSessions: sessions.length,
-        status: student.status,
-        registeredAt: student.createdAt,
-      }
-    }))
+    const rows = await buildExportRows()
 
     const GOOGLE_SHEETS_ID = process.env.GOOGLE_SHEETS_ID
     const GOOGLE_SERVICE_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY

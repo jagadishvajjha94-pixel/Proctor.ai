@@ -371,11 +371,25 @@ export const dbStore = {
   },
 
   async addSubmission(sessionId: string, submission: Submission): Promise<void> {
-    await prisma.submission.create({
-      data: {
+    await prisma.submission.upsert({
+      where: {
+        sessionId_questionId: { sessionId, questionId: submission.questionId },
+      },
+      create: {
         id: submission.id,
         sessionId,
         questionId: submission.questionId,
+        code: submission.code,
+        language: submission.language,
+        status: submission.status,
+        passedTests: submission.passedTests,
+        totalTests: submission.totalTests,
+        executionTime: submission.executionTime,
+        memoryUsed: submission.memoryUsed,
+        score: submission.score,
+        submittedAt: new Date(submission.submittedAt),
+      },
+      update: {
         code: submission.code,
         language: submission.language,
         status: submission.status,

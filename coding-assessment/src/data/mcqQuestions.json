@@ -1,0 +1,23 @@
+[
+  {
+    "id": "mcq1",
+    "question": "What is the time complexity of binary search on a sorted array of n elements?",
+    "options": ["O(n)", "O(log n)", "O(n^2)", "O(1)"],
+    "correctIndex": 1,
+    "maxScore": 10
+  },
+  {
+    "id": "mcq2",
+    "question": "Which data structure uses LIFO?",
+    "options": ["Queue", "Stack", "Array", "Linked List"],
+    "correctIndex": 1,
+    "maxScore": 10
+  },
+  {
+    "id": "mcq3",
+    "question": "What does CPU stand for?",
+    "options": ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Central Processor Unifier"],
+    "correctIndex": 0,
+    "maxScore": 10
+  }
+]

@@ -18,6 +18,8 @@ import { CodeEditor } from "@/components/code-editor"
 import { QuestionPanel } from "@/components/question-panel"
 import { ProctoringCamera } from "@/components/proctoring-camera"
 import { AIInterview } from "@/components/ai-interview"
+import { features } from "@/lib/features"
+import { ASSESSMENT_DURATION_SECONDS } from "@/lib/constants"
 import type { Question, Submission, Language, ViolationType } from "@/lib/types"
 
 const FALLBACK_QUESTIONS: Question[] = [
@@ -120,7 +122,7 @@ export default function AssessmentPage() {
   const [isRunning, setIsRunning] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [language] = useState<Language>("python")
-  const [timeLeft, setTimeLeft] = useState(3600)
+  const [timeLeft, setTimeLeft] = useState(ASSESSMENT_DURATION_SECONDS)
   const [totalViolations, setTotalViolations] = useState(0)
   const [warningLevel, setWarningLevel] = useState(0)
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
@@ -158,17 +160,18 @@ export default function AssessmentPage() {
 
   const handleSubmitTest = useCallback(async () => {
     try {
+      const submissionsList = Array.from(submissions.values())
       await fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "submit" }),
+        body: JSON.stringify({ action: "submit", submissions: submissionsList }),
         credentials: "include",
       })
       navigate("/dashboard")
     } catch (err) {
       console.error("Failed to submit test:", err)
     }
-  }, [navigate])
+  }, [navigate, submissions])
 
   useEffect(() => {
     if (isLocked) return
@@ -187,6 +190,7 @@ export default function AssessmentPage() {
 
   const handleViolation = useCallback(
     async (type: ViolationType, description: string) => {
+      if (!features.enableProctoring) return
       try {
         const res = await fetch("/api/proctoring/violation", {
           method: "POST",
@@ -265,7 +269,18 @@ export default function AssessmentPage() {
         setSubmissions((prev) => new Map(prev).set(question.id, submission))
         setLastSubmittedCode(code)
         setLastScore(score)
-        setInterviewActive(true)
+        if (features.enableInterview) setInterviewActive(true)
+        // Persist submission so session has it for scoring
+        try {
+          await fetch("/api/session/submission", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId: sid, submission }),
+            credentials: "include",
+          })
+        } catch (_) {
+          // Keep in state; will be sent again on final submit
+        }
       }
     } catch (err) {
       setOutput({ error: "Failed to submit code. Please try again." })
@@ -275,8 +290,10 @@ export default function AssessmentPage() {
   }
 
   const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
     const s = seconds % 60
+    if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
   }
 
@@ -302,7 +319,7 @@ export default function AssessmentPage() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <Shield className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="text-sm font-bold text-foreground">ProctorAI Assessment</span>
+          <span className="text-sm font-bold text-foreground">Coding Assessment</span>
           <Badge variant="outline" className="text-xs">Question {currentQuestion + 1}/{questions.length}</Badge>
         </div>
         <div className="flex items-center gap-4">
@@ -310,10 +327,12 @@ export default function AssessmentPage() {
             <Clock className="h-4 w-4" />
             {formatTime(timeLeft)}
           </div>
-          <Badge variant={totalViolations > 0 ? "destructive" : "secondary"} className="text-xs">
-            <AlertTriangle className="mr-1 h-3 w-3" />
-            {totalViolations} violations
-          </Badge>
+          {features.enableProctoring && (
+            <Badge variant={totalViolations > 0 ? "destructive" : "secondary"} className="text-xs">
+              <AlertTriangle className="mr-1 h-3 w-3" />
+              {totalViolations} violations
+            </Badge>
+          )}
           <Button variant="outline" size="sm" onClick={() => setShowSubmitDialog(true)}>
             <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
             Submit Test
@@ -323,9 +342,9 @@ export default function AssessmentPage() {
 
       <div className="flex flex-1 overflow-hidden min-h-0">
         <ResizablePanelGroup direction="horizontal" className="flex-1">
-          {/* Left: Question + AI — resizable width (drag right edge to widen question area) */}
-          <ResizablePanel defaultSize={28} minSize={22} maxSize={50} className="min-w-0 flex flex-col border-r border-border">
-            {interviewActive ? (
+          {/* Left: Question (and optional AI interview when enabled) — more space for question + code by default */}
+          <ResizablePanel defaultSize={features.enableInterview || features.enableProctoring ? 28 : 38} minSize={24} maxSize={55} className="min-w-0 flex flex-col border-r border-border">
+            {features.enableInterview && interviewActive ? (
               <ResizablePanelGroup direction="vertical" className="h-full">
                 <ResizablePanel defaultSize={55} minSize={30} maxSize={85} className="min-h-0">
                   <div className="h-full flex flex-col overflow-hidden p-3">
@@ -346,15 +365,17 @@ export default function AssessmentPage() {
             )}
           </ResizablePanel>
           <ResizableHandle withHandle className="bg-border shrink-0" />
-          <ResizablePanel defaultSize={72} minSize={40} className="min-w-0 flex flex-col">
+          <ResizablePanel defaultSize={features.enableInterview || features.enableProctoring ? 72 : 62} minSize={40} className="min-w-0 flex flex-col">
             <div className="flex-1 p-3 min-h-0">
               <CodeEditor language={language} onSubmit={handleSubmitCode} onRun={handleRunCode} isSubmitting={isSubmitting} isRunning={isRunning} />
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
-        <div className="w-[260px] shrink-0 border-l border-border p-3 flex flex-col">
+        <div className={`${features.enableProctoring ? "w-[260px]" : "w-[200px]"} shrink-0 border-l border-border p-3 flex flex-col`}>
           <div className="space-y-3">
-            <ProctoringCamera sessionId={sid} onViolation={handleViolation} totalViolations={totalViolations} warningLevel={warningLevel} />
+            {features.enableProctoring && (
+              <ProctoringCamera sessionId={sid} onViolation={handleViolation} totalViolations={totalViolations} warningLevel={warningLevel} />
+            )}
             <div className="rounded-lg border border-border bg-card p-3">
               <p className="mb-2 text-xs font-medium text-foreground">Submissions</p>
               <div className="space-y-1.5">

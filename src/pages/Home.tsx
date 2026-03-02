@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Shield, Brain, Code2, Eye, BarChart3, Lock, ArrowRight, CheckCircle2, AlertTriangle } from "lucide-react"
+import { features } from "@/lib/features"
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -49,13 +50,18 @@ export default function LandingPage() {
     }
   }
 
-  const features = [
-    { icon: Brain, title: "AI-Generated Questions", description: "Unique questions per student. No repetition within 1000 candidates; scales to 2000+." },
-    { icon: Eye, title: "Real-Time Proctoring", description: "Camera, mic, and browser monitoring with AI-powered violation detection." },
-    { icon: Code2, title: "Secure Code Execution", description: "Sandboxed code evaluation with multi-language support and plagiarism detection." },
-    { icon: Shield, title: "Anti-Cheat System", description: "Encrypted APIs, keystroke dynamics, browser integrity checks, and more." },
+  const featureList = [
+    { icon: Brain, title: "AI-Generated Questions", description: "Unique questions per student. No repetition within 1500 candidates; problem-focused and language-specific." },
+    { icon: Code2, title: "Code Practice & Execution", description: "Write and run code in-browser. Multi-language support with instant test feedback and code snippets." },
+    { icon: Shield, title: "Secure Assessment", description: "Encrypted APIs, server-side validation, one session per student." },
     { icon: BarChart3, title: "AI Eligibility Engine", description: "Transparent, auditable decisions based on multi-factor scoring." },
-    { icon: Lock, title: "Enterprise Security", description: "One session per device, server-side validation, zero client-side secrets." },
+    { icon: Lock, title: "Enterprise Security", description: "Server-side validation, zero client-side secrets." },
+    ...(features.enableProctoring
+      ? [{ icon: Eye, title: "Real-Time Proctoring", description: "Camera and browser monitoring with violation detection." } as const]
+      : []),
+    ...(features.enableInterview
+      ? [{ icon: Brain, title: "AI Mock Interview", description: "Technical + HR mock interview (optional, for future use)." } as const]
+      : []),
   ]
 
   return (
@@ -82,8 +88,7 @@ export default function LandingPage() {
                 Secure Campus Placement Assessments
               </h1>
               <p className="mt-5 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
-                Conduct AI-driven technical interviews and coding assessments with real-time proctoring.
-                Every question is unique. Every session is monitored. Every decision is explainable.
+                Practice with unique coding questions and run code in your browser. Every question is unique. Every decision is explainable.
               </p>
             </div>
             <Card className="card-glow border-border/60 bg-card/80 backdrop-blur-sm">
@@ -115,7 +120,7 @@ export default function LandingPage() {
               </CardContent>
             </Card>
             <div className="grid gap-4 sm:grid-cols-2">
-              {features.map((feature) => (
+              {featureList.map((feature) => (
                 <div key={feature.title} className="group flex items-start gap-4 rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 hover:shadow-lg">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
                     <feature.icon className="h-5 w-5" />

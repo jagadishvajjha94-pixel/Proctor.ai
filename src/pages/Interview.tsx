@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Brain, Send, User, Bot, Loader2, ArrowLeft, Upload, FileText, Code2, Volume2, VolumeX, Mic, MicOff, Download, CheckCircle, Award } from "lucide-react"
+import { MonacoCodeInput } from "@/components/monaco-code-input"
 import type { Language } from "@/lib/types"
 
 const SpeechRecognitionAPI = typeof window !== "undefined" && (window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition)
@@ -673,7 +674,7 @@ export default function InterviewPage() {
             <div className="border-t border-border p-4 bg-muted/30 space-y-3">
               <div className="flex items-center gap-2">
                 <Code2 className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">Coding question — type your solution below</span>
+                <span className="text-sm font-medium text-foreground">Coding question — type your solution below (copy/paste disabled)</span>
                 <Select value={codeLanguage} onValueChange={(v) => setCodeLanguage(v as Language)}>
                   <SelectTrigger className="w-[130px] h-8">
                     <SelectValue />
@@ -685,12 +686,12 @@ export default function InterviewPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <textarea
-                className="w-full h-40 rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono resize-y"
-                placeholder="Write your solution..."
+              <MonacoCodeInput
                 value={codeValue}
-                onChange={(e) => setCodeValue(e.target.value)}
-                spellCheck={false}
+                onChange={setCodeValue}
+                language={codeLanguage}
+                height={180}
+                disableCopyPaste
               />
               <Button onClick={handleRunAndSendCode} disabled={!codeValue.trim() || codeRunning} size="sm" className="gap-2">
                 {codeRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Code2 className="h-4 w-4" />}

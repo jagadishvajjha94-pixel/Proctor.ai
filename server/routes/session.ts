@@ -1,9 +1,40 @@
 import { Router, Request, Response } from "express"
 import { store } from "../../lib/store"
 import { getSession } from "../auth"
-import type { TestSession, TestAttempt, TestPhase, Language } from "../../lib/types"
+import { TOTAL_MARKS } from "../../lib/constants"
+import type { TestSession, TestAttempt, TestPhase, Language, TestResult, Submission } from "../../lib/types"
 
 const router = Router()
+
+/** Compute phase score (0–100) from session submissions; total marks = 100. */
+function phaseScoreFromSubmissions(submissions: { score: number }[]): number {
+  if (submissions.length === 0) return 0
+  const sum = submissions.reduce((s, sub) => s + sub.score, 0)
+  return Math.round((sum / submissions.length))
+}
+
+/** POST /api/session/submission — persist a single code submission for the current session */
+router.post("/submission", async (req: Request, res: Response) => {
+  try {
+    const auth = await getSession(req)
+    if (!auth || auth.role !== "student") {
+      return res.status(401).json({ error: "Unauthorized" })
+    }
+    const { sessionId, submission } = (req.body || {}) as { sessionId: string; submission: Submission }
+    if (!sessionId || !submission?.questionId) {
+      return res.status(400).json({ error: "sessionId and submission with questionId required" })
+    }
+    const session = await store.getSession(sessionId)
+    if (!session || session.studentId !== auth.id || session.status !== "in_progress") {
+      return res.status(403).json({ error: "Invalid or not your active session" })
+    }
+    await store.addSubmission(sessionId, submission)
+    return res.json({ ok: true })
+  } catch (error) {
+    console.error("Submission save error:", error)
+    return res.status(500).json({ error: "Failed to save submission" })
+  }
+})
 
 router.post("/", async (req: Request, res: Response) => {
   try {
@@ -12,9 +43,10 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Unauthorized" })
     }
 
-    const { action, language } = (req.body || {}) as {
+    const { action, language, submissions: bodySubmissions } = (req.body || {}) as {
       action: "start" | "submit" | "next_phase"
       language?: Language
+      submissions?: Submission[]
     }
 
     const student = await store.getStudent(auth.id)
@@ -56,10 +88,19 @@ router.post("/", async (req: Request, res: Response) => {
       )
 
       if (currentSession) {
+        // Sync any submissions sent with final submit (e.g. from client state) so scores are correct
+        if (Array.isArray(bodySubmissions) && bodySubmissions.length > 0) {
+          for (const sub of bodySubmissions) {
+            if (sub?.questionId) await store.addSubmission(currentSession.id, sub)
+          }
+        }
         currentSession.status = "completed"
         currentSession.endTime = new Date().toISOString()
         await store.setSession(currentSession)
       }
+
+      const completedAttempt = student.currentAttempt
+      const completedPhase = student.currentPhase
 
       if (student.currentPhase === "phase1") {
         student.currentPhase = "phase2"
@@ -73,6 +114,36 @@ router.post("/", async (req: Request, res: Response) => {
       }
 
       await store.setStudent(student)
+
+      // When both phases of an attempt are completed, compute scores (out of TOTAL_MARKS) and save result
+      if (completedPhase === "phase2") {
+        // Re-fetch sessions so completed session includes persisted submissions for scoring
+        const sessionsForScoring = await store.getSessionsByStudent(student.id)
+        const attemptSessions = sessionsForScoring.filter((s) => s.attempt === completedAttempt && s.status === "completed")
+        const p1 = attemptSessions.find((s) => s.phase === "phase1")
+        const p2 = attemptSessions.find((s) => s.phase === "phase2")
+        if (p1 && p2) {
+          const phase1Score = Math.min(TOTAL_MARKS, phaseScoreFromSubmissions(p1.submissions))
+          const phase2Score = Math.min(TOTAL_MARKS, phaseScoreFromSubmissions(p2.submissions))
+          const totalScore = Math.round((phase1Score + phase2Score) / 2)
+          const result: TestResult = {
+            studentId: student.id,
+            attempt: completedAttempt as TestAttempt,
+            phase1Score,
+            phase2Score,
+            totalScore,
+            accuracy: totalScore,
+            performance: totalScore,
+            violationCount: student.violations,
+            integrityScore: student.integrityScore,
+            codingAccuracy: totalScore,
+            problemSolvingDepth: totalScore,
+            consistency: totalScore,
+          }
+          await store.addResult(result)
+        }
+      }
+
       return res.json({ student, nextStep: student.status === "completed" ? "results" : "continue" })
     }
 

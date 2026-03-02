@@ -58,8 +58,8 @@ export function createApp() {
   app.use("/api/eligibility", eligibilityRoutes)
   app.use("/api/questions", questionsRoutes)
   app.use("/api/code", codeRoutes)
-  app.use("/api/interview", interviewRoutes)
-  app.use("/api/proctoring", proctoringRoutes)
+  if (process.env.ENABLE_INTERVIEW === "true") app.use("/api/interview", interviewRoutes)
+  if (process.env.ENABLE_PROCTORING === "true") app.use("/api/proctoring", proctoringRoutes)
   app.use("/api/sheets", sheetsRoutes)
   app.use("/api/resume", resumeRoutes)
 

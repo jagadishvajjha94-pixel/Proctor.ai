@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom"
+import { features } from "@/lib/features"
 import LandingPage from "./pages/Home"
 import DashboardPage from "./pages/Dashboard"
 import AdminPage from "./pages/Admin"
@@ -12,7 +13,7 @@ export default function App() {
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/assessment/:sessionId" element={<AssessmentPage />} />
-      <Route path="/interview" element={<InterviewPage />} />
+      {features.enableInterview && <Route path="/interview" element={<InterviewPage />} />}
     </Routes>
   )
 }

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Shield, Code2, AlertTriangle, CheckCircle2, Clock, ArrowRight, LogOut, User, Trophy, Target, XCircle, ArrowLeft, Brain, MessageCircle } from "lucide-react"
+import { features } from "@/lib/features"
 import type { Language, Student, EligibilityDecision, TestSession } from "@/lib/types"
 
 const fetcher = (url: string) => fetch(url, { credentials: "include" }).then((r) => r.json())
@@ -176,7 +177,7 @@ export default function DashboardPage() {
               </Card>
             )}
 
-            {student.status === "completed" && (
+            {features.enableInterview && student.status === "completed" && (
               <Card className="card-glow border-primary/30 bg-card/80 backdrop-blur-sm">
                 <CardHeader>
                   <div className="flex items-center gap-3">

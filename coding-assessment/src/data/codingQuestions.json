@@ -1,0 +1,28 @@
+[
+  {
+    "id": "coding1",
+    "title": "Sum of Two Numbers",
+    "description": "Read two integers from stdin and print their sum.",
+    "maxScore": 20,
+    "sampleInput": "2 3",
+    "sampleOutput": "5",
+    "testCases": [
+      { "input": "1 1", "output": "2" },
+      { "input": "10 20", "output": "30" },
+      { "input": "-5 5", "output": "0" }
+    ]
+  },
+  {
+    "id": "coding2",
+    "title": "Even or Odd",
+    "description": "Read an integer n from stdin. Print 'even' if n is even, else 'odd'.",
+    "maxScore": 20,
+    "sampleInput": "4",
+    "sampleOutput": "even",
+    "testCases": [
+      { "input": "4", "output": "even" },
+      { "input": "7", "output": "odd" },
+      { "input": "0", "output": "even" }
+    ]
+  }
+]

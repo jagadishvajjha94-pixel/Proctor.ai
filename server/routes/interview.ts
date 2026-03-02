@@ -2,8 +2,51 @@ import { Router, Request, Response } from "express"
 import { streamText, generateText, convertToModelMessages, type UIMessage } from "ai"
 import { Output } from "ai"
 import { z } from "zod"
+import fs from "fs"
+import path from "path"
+import os from "os"
 
 const router = Router()
+
+/** Whisper fallback: transcribe audio when Web Speech API unavailable */
+router.post("/transcribe", async (req: Request, res: Response) => {
+  let tmpPath: string | null = null
+  try {
+    const { audio } = req.body as { audio?: string }
+    if (!audio || typeof audio !== "string") {
+      return res.status(400).json({ error: "audio base64 required" })
+    }
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+      return res.status(503).json({ error: "Transcription unavailable (OPENAI_API_KEY not set)" })
+    }
+    const base64 = audio.replace(/^data:audio\/\w+;base64,/, "")
+    const buffer = Buffer.from(base64, "base64")
+    tmpPath = path.join(os.tmpdir(), `whisper-${Date.now()}.webm`)
+    fs.writeFileSync(tmpPath, buffer)
+    const { default: FormData } = await import("form-data")
+    const fd = new FormData()
+    fd.append("file", fs.createReadStream(tmpPath), { filename: "audio.webm", contentType: "audio/webm" })
+    fd.append("model", "whisper-1")
+    const r = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, ...fd.getHeaders() },
+      body: fd as unknown as BodyInit,
+    })
+    if (!r.ok) {
+      const err = await r.text()
+      return res.status(r.status).json({ error: "Whisper failed", detail: err })
+    }
+    const data = (await r.json()) as { text?: string }
+    const transcript = data.text?.trim() ?? ""
+    return res.json({ transcript })
+  } catch (err) {
+    console.error("Transcribe error:", err)
+    return res.status(500).json({ error: "Failed to transcribe audio" })
+  } finally {
+    if (tmpPath && fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath)
+  }
+})
 
 const interviewSummarySchema = z.object({
   questionTypes: z.array(z.string()).describe("e.g. Technical, HR, Coding"),

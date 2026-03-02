@@ -62,11 +62,7 @@ If `pnpm install` fails with exit 236 on Vercel, try:
 
 3. **Already applied in this repo**: `corepack enable pnpm`, `--ignore-scripts`, `--no-optional`, `pdf-parse` as optionalDependency, Node 20 in engines.
 
-4. **If exit 236 still happens** – Force npm on Vercel: in Vercel → Project → **Settings** → **General** → **Build & Development** → **Install Command**, set to:
-   ```bash
-   npm install --legacy-peer-deps --ignore-scripts
-   ```
-   Then add `package-lock.json` to the repo (locally run `npm install --package-lock-only --legacy-peer-deps`, commit and push). Vercel will then use npm instead of pnpm.
+4. **Exit 236 fix applied**: This repo uses **npm** on Vercel (not pnpm) to avoid exit 236. `vercel.json` has `installCommand: "npm install --legacy-peer-deps --ignore-scripts"`. Optional: for faster installs, run locally `npm install --package-lock-only --legacy-peer-deps`, commit `package-lock.json`, and change install command to `npm ci --legacy-peer-deps`.
 
 ## 6. Vercel deployment checklist (avoid build/runtime errors)
 

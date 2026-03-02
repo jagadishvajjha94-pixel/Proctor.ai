@@ -131,7 +131,9 @@ class MemoryStore {
   async addSubmission(sessionId: string, submission: Submission): Promise<void> {
     const session = this.sessions.get(sessionId)
     if (!session) return
-    session.submissions.push(submission)
+    const idx = session.submissions.findIndex((s) => s.questionId === submission.questionId)
+    if (idx >= 0) session.submissions[idx] = submission
+    else session.submissions.push(submission)
     this.sessions.set(sessionId, session)
   }
 

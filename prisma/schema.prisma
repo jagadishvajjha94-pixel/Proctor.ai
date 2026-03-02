@@ -1,4 +1,4 @@
-// Production-ready schema for 3000+ concurrent students
+// Enterprise AI Interview Platform - 1000+ students
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +8,106 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  fullName           String
+  role               String   // student | recruiter
+  companyApplyingTo  String?
+  positionLevel      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  interviewSessions InterviewSession[]
+  problemAttempts   ProblemAttempt[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model InterviewSession {
+  id             String   @id @default(cuid())
+  userId         String
+  sessionType    String   // mock_interview | screening
+  status         String   @default("in_progress") // in_progress | completed | abandoned
+  difficultyLevel String  @default("medium") // easy | medium | hard | very_hard (adaptive)
+  startTime      DateTime @default(now())
+  endTime        DateTime?
+  score          Int?
+  aiFeedback     String?  @db.Text
+  transcript     String?  @db.Text
+  questions      Json?    @default("[]")
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemAttempts ProblemAttempt[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Question {
+  id              String   @id @default(cuid())
+  uniqueHash      String   @unique
+  category        String   // dsa | system_design
+  difficultyLevel String   // easy | medium | hard | very_hard
+  title           String
+  description     String   @db.Text
+  examples        Json     @default("[]")
+  timeLimit       Int      // seconds
+  constraints     Json     @default("[]")
+  testCases       Json     @default("[]")
+  generatedByAi   Boolean  @default(false)
+  generatedAt     DateTime @default(now())
+  usedCount       Int      @default(0)
+
+  @@index([uniqueHash])
+  @@index([category])
+}
+
+model ProblemAttempt {
+  id                String   @id @default(cuid())
+  userId            String
+  questionId        String
+  sessionId         String
+  submittedCode     String   @db.Text
+  language          String
+  isCorrect         Boolean
+  testCasesPassed   Int      @default(0)
+  timeTaken         Int?     // seconds
+  attemptNumber     Int      @default(1)
+  aiEvaluationFeedback String? @db.Text
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  aiEvaluation AIEvaluation?
+
+  @@index([userId])
+  @@index([sessionId])
+}
+
+model AIEvaluation {
+  id                    String   @id @default(cuid())
+  attemptId             String   @unique
+  codeQualityScore      Int
+  approachScore         Int
+  communicationScore    Int
+  edgeCasesHandled      Boolean
+  optimizationSuggestions String? @db.Text
+  overallFeedbackText   String   @db.Text
+  recommendation        String
+
+  attempt ProblemAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model QuestionGenerationLog {
+  id                        String   @id @default(cuid())
+  timestamp                 DateTime @default(now())
+  generationParams          Json
+  generatedQuestionId       String?
+  uniquenessVerificationStatus String // verified | duplicate_regenerated
+}
+
+// Legacy models (kept for backward compatibility)
 model Student {
   id             String   @id @default(cuid())
   name           String
@@ -15,9 +115,9 @@ model Student {
   college        String
   registrationId String   @unique
   currentAttempt Int      @default(1)
-  currentPhase   String   @default("phase1") // phase1 | phase2
+  currentPhase   String   @default("phase1")
   language       String   @default("python")
-  status         String   @default("not_started") // not_started | in_progress | completed | locked
+  status         String   @default("not_started")
   violations     Int      @default(0)
   integrityScore Int      @default(100)
   createdAt      DateTime @default(now())
@@ -25,36 +125,35 @@ model Student {
   sessions   TestSession[]
   results    TestResult[]
   decision   EligibilityDecision?
+
   @@index([email])
   @@index([status])
-  @@index([college])
 }
 
 model TestSession {
   id         String    @id @default(cuid())
   studentId  String
   attempt    Int
-  phase      String // phase1 | phase2
+  phase      String
   status     String    @default("in_progress")
   startTime  DateTime  @default(now())
   endTime    DateTime?
-  questions  Json?     @default("[]") // Stored question set for this session
+  questions  Json?     @default("[]")
 
   student     Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
   violations  ViolationLog[]
   submissions Submission[]
 
   @@index([studentId])
-  @@index([status])
 }
 
 model ViolationLog {
-  id          String   @id @default(cuid())
-  sessionId   String
-  type        String
-  timestamp   DateTime @default(now())
-  severity    String // low | medium | high
-  description String
+  id            String   @id @default(cuid())
+  sessionId     String
+  type          String
+  timestamp     DateTime @default(now())
+  severity      String
+  description   String
   screenshotUrl String?
 
   session TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -63,53 +162,53 @@ model ViolationLog {
 }
 
 model Submission {
-  id           String   @id @default(cuid())
-  sessionId    String
-  questionId   String
-  code         String   @db.Text
-  language     String
-  status       String   @default("pending")
-  passedTests  Int      @default(0)
-  totalTests   Int      @default(0)
-  executionTime Int?
-  memoryUsed   Int?
-  score        Int      @default(0)
-  submittedAt  DateTime @default(now())
+  id             String   @id @default(cuid())
+  sessionId      String
+  questionId     String
+  code           String   @db.Text
+  language       String
+  status         String   @default("pending")
+  passedTests    Int      @default(0)
+  totalTests     Int      @default(0)
+  executionTime  Int?
+  memoryUsed     Int?
+  score          Int      @default(0)
+  submittedAt    DateTime @default(now())
 
   session TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  @@unique([sessionId, questionId])
   @@index([sessionId])
 }
 
 model TestResult {
-  id                 String   @id @default(cuid())
-  studentId          String
-  attempt            Int
-  phase1Score        Int
-  phase2Score        Int
-  totalScore         Int
-  accuracy           Int
-  performance        Int
-  violationCount     Int
-  integrityScore     Int
-  codingAccuracy     Int
+  id                  String   @id @default(cuid())
+  studentId           String
+  attempt             Int
+  phase1Score         Int
+  phase2Score         Int
+  totalScore          Int
+  accuracy            Int
+  performance         Int
+  violationCount      Int
+  integrityScore      Int
+  codingAccuracy      Int
   problemSolvingDepth Int
-  consistency        Int
+  consistency         Int
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, attempt])
-  @@index([studentId])
 }
 
 model EligibilityDecision {
-  id              String   @id @default(cuid())
-  studentId       String   @unique
-  status          String // eligible | borderline | not_eligible
-  confidence      Int
-  reasons         String[] @default([])
-  scores          Json     // { codingAccuracy, problemSolving, performance, consistency, integrity, behavioralTrust }
-  recommendation  String   @db.Text
+  id             String   @id @default(cuid())
+  studentId      String   @unique
+  status         String
+  confidence     Int
+  reasons        String[] @default([])
+  scores         Json
+  recommendation String   @db.Text
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
@@ -117,17 +216,17 @@ model EligibilityDecision {
 model QuestionHash {
   id        String   @id @default(cuid())
   hash      String   @unique
-  useCount  Int      @default(0)  // Reuse only after >= QUESTION_REUSE_AFTER (1000) students
+  useCount  Int      @default(0)
   createdAt DateTime @default(now())
 
   @@index([hash])
 }
 
 model StudentQuestionHash {
-  id          String   @id @default(cuid())
-  studentId   String
+  id           String   @id @default(cuid())
+  studentId    String
   questionHash String
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   @@unique([studentId, questionHash])
   @@index([studentId])
@@ -135,7 +234,7 @@ model StudentQuestionHash {
 }
 
 model BlueprintUsage {
-  id        String   @id @default(cuid())
+  id          String @id @default(cuid())
   blueprintId String @unique
-  count     Int      @default(0)
+  count       Int    @default(0)
 }
