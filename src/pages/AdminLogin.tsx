@@ -8,8 +8,8 @@ import { Shield, ArrowRight, AlertTriangle, ArrowLeft } from "lucide-react"
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("admin@admin.com")
+  const [password, setPassword] = useState("admin123")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -24,16 +24,16 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ email, password }),
         credentials: "include",
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data.error || "Invalid credentials")
+        setError(data.error || "Invalid email or password")
         return
       }
       if (data.role === "admin" && data.redirect === "/admin") {
         navigate("/admin")
         return
       }
-      setError("Access denied. Use admin credentials.")
+      setError("Invalid email or password")
     } catch {
       setError("Network error. Please try again.")
     } finally {
@@ -51,7 +51,7 @@ export default function AdminLoginPage() {
             </div>
             <div>
               <CardTitle className="text-xl text-foreground">Staff / Admin</CardTitle>
-              <CardDescription className="mt-0.5">Sign in to view results and export data.</CardDescription>
+              <CardDescription className="mt-0.5">Sign in to view results and export data. Default: admin@admin.com / admin123</CardDescription>
             </div>
           </div>
         </CardHeader>

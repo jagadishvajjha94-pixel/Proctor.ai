@@ -5,6 +5,29 @@ import type { Student } from "../../lib/types"
 
 const router = Router()
 
+/** Default admin credentials (use ADMIN_EMAIL / ADMIN_PASSWORD in .env to override) */
+const DEFAULT_ADMIN_EMAIL = "admin@admin.com"
+const DEFAULT_ADMIN_PASSWORD = "admin123"
+
+/** POST /api/auth/admin-login — admin only; no student logic, returns 401 for wrong credentials */
+router.post("/admin-login", async (req: Request, res: Response) => {
+  try {
+    const raw = (req.body || {}) as { email?: string; password?: string }
+    const email = (raw.email ?? "").trim().toLowerCase()
+    const password = (raw.password ?? "").trim()
+    const adminEmail = (process.env.ADMIN_EMAIL ?? DEFAULT_ADMIN_EMAIL).trim().toLowerCase()
+    const adminPass = (process.env.ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD).trim()
+    if (email && password && email === adminEmail && password === adminPass) {
+      await createAdminSession(res)
+      return res.json({ role: "admin", redirect: "/admin" })
+    }
+    return res.status(401).json({ error: "Invalid email or password" })
+  } catch (error) {
+    console.error("Admin login error:", error)
+    return res.status(500).json({ error: "Authentication failed" })
+  }
+})
+
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const raw = (req.body || {}) as {
@@ -21,8 +44,8 @@ router.post("/login", async (req: Request, res: Response) => {
     const nameVal = typeof name === "string" ? name.trim() : ""
     const collegeVal = typeof college === "string" ? college.trim() : ""
 
-    const adminEmail = (process.env.ADMIN_EMAIL ?? "jagadish@rcee.ac.in").trim().toLowerCase()
-    const adminPass = (process.env.ADMIN_PASSWORD ?? "jagadish123456").trim()
+    const adminEmail = (process.env.ADMIN_EMAIL ?? DEFAULT_ADMIN_EMAIL).trim().toLowerCase()
+    const adminPass = (process.env.ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD).trim()
     if (email === adminEmail) {
       if (password === adminPass) {
         await createAdminSession(res)
